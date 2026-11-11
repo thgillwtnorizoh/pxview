@@ -82,13 +82,14 @@ Goal: the existing download button recognizes Ugoira and exports the animation a
 ### Tests added
 - `__tests__/ugoiraDownload.spec.js`: mocks network/file/archive calls; verifies frame order, variable-duration manifest, output file, missing-frame failure with previous export intact, HTTP errors, workspace cleanup, iOS media-scan distinction, and refusal of unsupported formats.
 - `__tests__/saveImageSettings.spec.js`: defaults, retention of legacy settings, old backup compatibility, new setting restoration.
+- `__tests__/saveImageRegression.spec.js`: exercises the actual existing HOC against mocked native dependencies to check single-image and multi-image PNG downloads, filename/folder settings, iOS camera-roll delivery, and new Ugoira dispatch without a preview-image fetch.
 - Original `__tests__/ugoiraMetadata.spec.js` and existing auth-saga tests remain.
 
 ### Pending verification at time of commit
-- CI YAML and Jest tests have not yet been run in GitHub Actions. Check live job results and append exact workflow URLs, failures and fixes below after execution.
+- Initial Actions runs triggered after CI introduction: [push #43039541460](https://github.com/thgillwtnorizoh/pxview/actions/runs/43039541460) and [PR #43039544618](https://github.com/thgillwtnorizoh/pxview/actions/runs/43039544618). Initial jobs entered dependency installation; tests/build results not yet verified. CI concurrency now shares a branch-based group to prevent expensive duplicate push/PR builds.
 - The real Firebase integration is deliberately not tested by placeholder configs.
 - No Android device or iOS simulator runtime verification of Ugoira ZIP export yet; compiling successfully is necessary but not sufficient.
 - Avoid broad changes to Android Gradle, CocoaPods, native libraries and unrelated application source unless job logs demonstrate a specific blocker.
 
 ### CI execution log
-- Pending initial GitHub Actions run.
+- Awaiting final results of new run after regression coverage.
