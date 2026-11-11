@@ -113,3 +113,9 @@ Goal: the existing download button recognizes Ugoira and exports the animation a
 - **iOS FAIL before Xcode build**: `pod install --repo-update` reached legacy `Flipper-Glog 0.3.6`, whose configure script defaulted to unsupported `-arch armv7` on Xcode 16.4: `C compiler cannot create executables`. This optional debugging tool is not essential to app runtime.
 - Narrow fixes: specify `packages: 'platform-tools'` to the Android SDK setup action; skip only optional Flipper initialization in `ios/Podfile` when `CI=true`, retaining normal developer/local Flipper behavior; capture CocoaPods logs as failure artifacts.
 - **No app runtime/source changes**. New Android and iOS Actions builds must execute again; successful Jest alone is insufficient for U01-B acceptance.
+
+### U01-B CI retry after failed native builds (2026-11-11)
+- Checked [run #43050954352](https://github.com/thgillwtnorizoh/pxview/actions/runs/43050954352) at `f21a284acda873ed5bcdc70bebd843abbeb6c45e`. JavaScript: **39/39 tests PASS**. Android: **FAIL** resolving `me.relex:photodraweeview:1.1.3` for `react-native-photo-view-ex` (JCenter-only legacy dependency). iOS: **FAIL** installing React Native's `glog 0.3.5` during `pod install`; its native configure script assumed `armv7` and the Xcode 16.4 SDK cannot compile it.
+- Android scoped resolution fix: override only `me.relex:photodraweeview:1.1.3` to upstream `2.1.0` served by Maven Central. **Compatibility must be confirmed by Android build and runtime photo-view tests**; source compatibility has not been proven.
+- iOS CI-only fix: set `PLATFORM_NAME=iphonesimulator` and `CURRENT_ARCH=x86_64` during CocoaPods install to avoid unsupported `armv7` in the React Native glog prepare script. No app runtime code modified.
+- Do not claim passing Android/iOS builds until their next GitHub Actions run reports success; check any new blockers in job logs. Persistent npm caching may not prevent multi-minute reinstalls.

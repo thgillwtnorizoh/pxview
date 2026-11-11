@@ -150,6 +150,11 @@ jobs:
           plutil -lint ios/GoogleService-Info.plist
       - name: Install CocoaPods
         working-directory: ios
+        env:
+          # RN 0.63 glog's prepare script defaults to removed armv7 if unset.
+          # Build its configure probe for the Intel iOS simulator instead.
+          PLATFORM_NAME: iphonesimulator
+          CURRENT_ARCH: x86_64
         run: |
           set -o pipefail
           pod install --repo-update 2>&1 | tee "$RUNNER_TEMP/pxview-ios-pods.log"

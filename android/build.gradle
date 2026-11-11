@@ -38,4 +38,17 @@ allprojects {
         jcenter()
         maven { url "https://www.jitpack.io" }
     }
+    // The legacy photo viewer requests 1.1.3 from defunct JCenter. 2.1.0
+    // is the same upstream artifact from Maven Central; keep this scoped
+    // to that coordinate instead of upgrading unrelated dependencies.
+    configurations.all {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'me.relex' &&
+                details.requested.name == 'photodraweeview' &&
+                details.requested.version == '1.1.3') {
+                details.useVersion '2.1.0'
+                details.because '1.1.3 is no longer available from JCenter; 2.1.0 is on Maven Central'
+            }
+        }
+    }
 }
