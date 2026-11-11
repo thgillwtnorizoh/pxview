@@ -67,3 +67,28 @@ Goal: the existing download button recognizes Ugoira and exports the animation a
 3. Implement and verify variable-frame-duration GIF/MP4/WebM converters; show each format as selectable only once demonstrably functional.
 4. Add codec-specific photo/gallery behavior, robust cancellation/progress as needed, then perform U01 full acceptance testing.
 5. Update `contexts.md` after every task.
+
+## U01-B — CI baseline and ZIP regression verification (2026-11-11)
+
+### Scope and current status
+- Authorized to create Android and iOS GitHub Actions builds after successful test runs; platform build success is required for acceptance of each development task.
+- No pre-existing `.github/workflows` directory or Actions runs existed at the beginning of U01-B.
+- GitHub retired `macos-14` on **2026-11-02**; CI uses `macos-15-intel` for old native dependencies, with iOS simulator build and code signing disabled.
+- Added `.github/workflows/pxview-ci.yml` with three jobs: JavaScript Jest tests, Android SDK 29 debug APK, and iOS simulator build. Builds depend on successful tests and run in parallel.
+- Uses Node 14.21.3 and existing npm `package-lock.json` (v1), JDK 8 for Gradle 6.2/AGP 3.5.3, Android build-tools 29.0.2, CocoaPods and Xcode on a supported macOS 15 runner.
+- Android Firebase `google-services.json` and iOS `GoogleService-Info.plist` are excluded from source control; CI generates **nonfunctional build-only dummy configurations**. Never use CI artifacts as configured production applications.
+- Uploads the built Android debug APK and unsigned iOS simulator .app when successful, plus iOS build logs on failure. The simulator .app is not an installable signed IPA.
+
+### Tests added
+- `__tests__/ugoiraDownload.spec.js`: mocks network/file/archive calls; verifies frame order, variable-duration manifest, output file, missing-frame failure with previous export intact, HTTP errors, workspace cleanup, iOS media-scan distinction, and refusal of unsupported formats.
+- `__tests__/saveImageSettings.spec.js`: defaults, retention of legacy settings, old backup compatibility, new setting restoration.
+- Original `__tests__/ugoiraMetadata.spec.js` and existing auth-saga tests remain.
+
+### Pending verification at time of commit
+- CI YAML and Jest tests have not yet been run in GitHub Actions. Check live job results and append exact workflow URLs, failures and fixes below after execution.
+- The real Firebase integration is deliberately not tested by placeholder configs.
+- No Android device or iOS simulator runtime verification of Ugoira ZIP export yet; compiling successfully is necessary but not sufficient.
+- Avoid broad changes to Android Gradle, CocoaPods, native libraries and unrelated application source unless job logs demonstrate a specific blocker.
+
+### CI execution log
+- Pending initial GitHub Actions run.
