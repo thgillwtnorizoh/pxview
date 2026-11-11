@@ -54,6 +54,10 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          # The retired Android SDK 'tools' package is no longer available.
+          # Keep modern cmdline-tools and platform-tools for sdkmanager.
+          packages: 'platform-tools'
       - name: Install legacy Android SDK packages
         run: |
           yes | sdkmanager --licenses >/dev/null || true
@@ -146,7 +150,9 @@ jobs:
           plutil -lint ios/GoogleService-Info.plist
       - name: Install CocoaPods
         working-directory: ios
-        run: pod install --repo-update
+        run: |
+          set -o pipefail
+          pod install --repo-update 2>&1 | tee "$RUNNER_TEMP/pxview-ios-pods.log"
       - name: Build app for iOS simulator without signing
         run: |
           set -o pipefail
@@ -159,12 +165,14 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/PxViewDerivedData" \
             CODE_SIGNING_ALLOWED=NO \
             build 2>&1 | tee "$RUNNER_TEMP/pxview-ios-build.log"
-      - name: Upload iOS build log on failure
+      - name: Upload iOS setup and build logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: pxview-ios-build-log
-          path: ${{ runner.temp }}/pxview-ios-build.log
+          path: |
+            ${{ runner.temp }}/pxview-ios-pods.log
+            ${{ runner.temp }}/pxview-ios-build.log
           if-no-files-found: ignore
           retention-days: 14
       - name: Upload iOS simulator application

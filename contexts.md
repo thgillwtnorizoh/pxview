@@ -104,3 +104,12 @@ Goal: the existing download button recognizes Ugoira and exports the animation a
 - The existing iOS Xcode project did not contain a shared `PxViewR` scheme (only the tvOS scheme); added a minimal shared application scheme to support `xcodebuild -workspace ... -scheme PxViewR` without changing native application sources.
 - Added explicit iOS npm cache restore/save **after npm installation but before CocoaPods** to keep dependencies cached even when a later native build fails.
 - These changes supersede the in-progress iOS job in the prior CI attempt; native build results must be obtained from the new commit.
+
+### U01-B CI attempt #3 — diagnosed from completed Actions logs (2026-11-11)
+
+- Evidence: [run #43042704928](https://github.com/thgillwtnorizoh/pxview/actions/runs/43042704928) at source `20f0f3512d73f9bc7ec668931aad6143a8c7fed5`.
+- JavaScript regression tests **PASS: 5/5 suites, 39/39 tests**.
+- **Android FAIL before Gradle**: `android-actions/setup-android@v3` default package list contains `tools`, which is retired; log: `Warning: Failed to find package 'tools'`. JDK 17 fixed the preceding SDK-manager error, but this new package-list blocker prevented actual Android app compilation.
+- **iOS FAIL before Xcode build**: `pod install --repo-update` reached legacy `Flipper-Glog 0.3.6`, whose configure script defaulted to unsupported `-arch armv7` on Xcode 16.4: `C compiler cannot create executables`. This optional debugging tool is not essential to app runtime.
+- Narrow fixes: specify `packages: 'platform-tools'` to the Android SDK setup action; skip only optional Flipper initialization in `ios/Podfile` when `CI=true`, retaining normal developer/local Flipper behavior; capture CocoaPods logs as failure artifacts.
+- **No app runtime/source changes**. New Android and iOS Actions builds must execute again; successful Jest alone is insufficient for U01-B acceptance.
