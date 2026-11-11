@@ -95,3 +95,12 @@ Goal: the existing download button recognizes Ugoira and exports the animation a
 - Initial GitHub Actions push and PR runs for `54875e5` completed with **test failure**. `npm ci` successfully installed 1,740 packages (around 411 seconds). Existing auth saga, Ugoira metadata and settings suites passed (31 assertions), while `ugoiraDownload.spec.js` failed during module initialization with `TypeError: Cannot read property 'DocumentDir' of undefined` from `rn-fetch-blob/fs.js`; its Jest mock was not in effect early enough. No Android or iOS build started because build jobs require passing tests.
 - Fix: converted native-dependent test imports to explicit `require()` statements **after** `jest.mock()` registration in both Ugoira downloader and image/manga regression tests; runtime implementation code unchanged. Re-running CI.
 - Initial evidence: https://github.com/thgillwtnorizoh/pxview/actions/runs/43039541460 and https://github.com/thgillwtnorizoh/pxview/actions/runs/43039544618.
+
+### U01-B CI attempt #2 — test gate passed, native setup findings
+
+- At `368b91f5816907b75165b87705490e32e93551e0`, GitHub Actions run [#43040932406](https://github.com/thgillwtnorizoh/pxview/actions/runs/43040932406) executed Jest with **5/5 suites and 39/39 tests passing**.
+- The Android job failed **before Gradle**: `android-actions/setup-android@v3` installed Android cmdline-tools 16, which requires JDK 17, but Java 8 was already selected. The Android build itself was not executed.
+- CI correction: Java 17 for SDK setup and SDK package installation, then Java 8 for Gradle 6.2 / AGP 3.5.3. The app Java/Gradle dependencies are left unchanged.
+- The existing iOS Xcode project did not contain a shared `PxViewR` scheme (only the tvOS scheme); added a minimal shared application scheme to support `xcodebuild -workspace ... -scheme PxViewR` without changing native application sources.
+- Added explicit iOS npm cache restore/save **after npm installation but before CocoaPods** to keep dependencies cached even when a later native build fails.
+- These changes supersede the in-progress iOS job in the prior CI attempt; native build results must be obtained from the new commit.

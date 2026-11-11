@@ -47,15 +47,21 @@ jobs:
         with:
           node-version: '14.21.3'
           cache: npm
+      # New Android SDK tools require JDK 17. Gradle 6.2/AGP 3.5.3
+      # still require the legacy JDK for the actual application build.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'
+          java-version: '17'
       - uses: android-actions/setup-android@v3
       - name: Install legacy Android SDK packages
         run: |
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platforms;android-29" "build-tools;29.0.2"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
       - name: Install dependencies from lockfile
         run: npm ci --no-audit --no-fund
       - name: Create nonfunctional Firebase build placeholder
@@ -107,8 +113,22 @@ jobs:
         run: |
           xcodebuild -version
           pod --version
+      - name: Restore persistent iOS npm cache
+        uses: actions/cache/restore@v4
+        id: ios-npm-cache
+        with:
+          path: ~/.npm
+          key: pxview-ios-npm-node14-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies from lockfile
         run: npm ci --no-audit --no-fund
+      # Save the cache before CocoaPods/Xcode compilation so that a native
+      # build failure does not require downloading 1,740 npm packages again.
+      - name: Preserve iOS npm cache after installation
+        if: steps.ios-npm-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.npm
+          key: pxview-ios-npm-node14-${{ hashFiles('package-lock.json') }}
       - name: Create nonfunctional Firebase build placeholder
         run: |
           cat > ios/GoogleService-Info.plist <<'PLIST'
