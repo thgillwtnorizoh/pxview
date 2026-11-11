@@ -165,6 +165,8 @@
   "saveImageNameWorkTitle": "作品タイトル",
   "saveImageNameWorkIdWorkTitle": "作品ID_作品タイトル",
   "saveImageSettings": "画像保存設定",
+  "ugoiraExportFormat": "うごイラの保存形式",
+  "ugoiraExportFormatZip": "オリジナルZIP（フレームと表示時間）",
   "saveImageStart": "保存を開始します",
   "saveImageSuccess": "{0}を保存しました",
   "saveImageUserFolderName": "作者フォルダ名",

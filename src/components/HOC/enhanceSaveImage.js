@@ -159,7 +159,7 @@ const enhanceSaveImage = (WrappedComponent) => {
         const imageFileName = this.getImageFileName(
           workId, workTitle, workType, saveImageSettings, 0,
         );
-        const fileName = imageFileName.replace(/\\.png$/i, '.zip');
+        const fileName = imageFileName.replace(/\.png$/i, '.zip');
         this.showToast(i18n.saveImageStart);
         try {
           if (!(await RNFetchBlob.fs.isDir(imagesDir))) {
