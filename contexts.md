@@ -92,4 +92,6 @@ Goal: the existing download button recognizes Ugoira and exports the animation a
 - Avoid broad changes to Android Gradle, CocoaPods, native libraries and unrelated application source unless job logs demonstrate a specific blocker.
 
 ### CI execution log
-- Awaiting final results of new run after regression coverage.
+- Initial GitHub Actions push and PR runs for `54875e5` completed with **test failure**. `npm ci` successfully installed 1,740 packages (around 411 seconds). Existing auth saga, Ugoira metadata and settings suites passed (31 assertions), while `ugoiraDownload.spec.js` failed during module initialization with `TypeError: Cannot read property 'DocumentDir' of undefined` from `rn-fetch-blob/fs.js`; its Jest mock was not in effect early enough. No Android or iOS build started because build jobs require passing tests.
+- Fix: converted native-dependent test imports to explicit `require()` statements **after** `jest.mock()` registration in both Ugoira downloader and image/manga regression tests; runtime implementation code unchanged. Re-running CI.
+- Initial evidence: https://github.com/thgillwtnorizoh/pxview/actions/runs/43039541460 and https://github.com/thgillwtnorizoh/pxview/actions/runs/43039544618.

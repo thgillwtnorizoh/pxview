@@ -1,8 +1,3 @@
-import { Platform } from 'react-native';
-import RNFetchBlob from 'rn-fetch-blob';
-import { unzip, zip } from 'react-native-zip-archive';
-import pixiv from '../src/common/helpers/apiClient';
-import downloadUgoira from '../src/common/helpers/ugoiraDownload';
 
 jest.mock('rn-fetch-blob', () => ({
   fs: {
@@ -27,6 +22,12 @@ jest.mock('../src/common/helpers/apiClient', () => ({
   __esModule: true,
   default: { ugoiraMetaData: jest.fn() },
 }));
+
+const { Platform } = require('react-native');
+const RNFetchBlob = require('rn-fetch-blob').default || require('rn-fetch-blob');
+const { unzip, zip } = require('react-native-zip-archive');
+const pixiv = require('../src/common/helpers/apiClient').default || require('../src/common/helpers/apiClient');
+const downloadUgoira = require('../src/common/helpers/ugoiraDownload').default || require('../src/common/helpers/ugoiraDownload');
 
 describe('Ugoira ZIP download integration', () => {
   const fs = RNFetchBlob.fs;

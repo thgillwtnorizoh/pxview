@@ -1,8 +1,3 @@
-import { Platform, DeviceEventEmitter } from 'react-native';
-import RNFetchBlob from 'rn-fetch-blob';
-import CameraRoll from '@react-native-community/cameraroll';
-import enhanceSaveImage from '../src/components/HOC/enhanceSaveImage';
-import downloadUgoira from '../src/common/helpers/ugoiraDownload';
 
 jest.mock('react-native', () => ({
   Platform: { OS: 'ios' },
@@ -42,6 +37,12 @@ jest.mock('rn-fetch-blob', () => ({
 }));
 
 jest.mock('../src/common/helpers/ugoiraDownload', () => jest.fn());
+
+const { Platform, DeviceEventEmitter } = require('react-native');
+const RNFetchBlob = require('rn-fetch-blob').default || require('rn-fetch-blob');
+const CameraRoll = require('@react-native-community/cameraroll').default || require('@react-native-community/cameraroll');
+const enhanceSaveImage = require('../src/components/HOC/enhanceSaveImage').default || require('../src/components/HOC/enhanceSaveImage');
+const downloadUgoira = require('../src/common/helpers/ugoiraDownload').default || require('../src/common/helpers/ugoiraDownload');
 
 const i18n = {
   saveImageStart: 'Saving image',
