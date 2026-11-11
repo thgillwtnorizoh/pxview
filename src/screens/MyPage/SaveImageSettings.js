@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View } from 'react-native';
+import { View, Alert } from 'react-native';
 import { connect } from 'react-redux';
 import { withTheme, Switch } from 'react-native-paper';
 import { connectLocalization } from '../../components/Localization';
@@ -10,6 +10,7 @@ import {
   MODAL_TYPES,
   SAVE_FILE_NAME_USER_FOLDER_FORMAT,
   SAVE_FILE_NAME_FORMAT,
+  UGOIRA_EXPORT_FORMATS,
 } from '../../common/constants';
 import { globalStyles } from '../../styles';
 
@@ -29,6 +30,17 @@ class SaveImageSettings extends Component {
       userFolderName,
       fileName,
     });
+  };
+
+  handleOnPressUgoiraExportFormat = () => {
+    const { i18n, setSettings } = this.props;
+    Alert.alert(i18n.ugoiraExportFormat, null, [
+      {
+        text: i18n.ugoiraExportFormatZip,
+        onPress: () => setSettings({ ugoiraExportFormat: UGOIRA_EXPORT_FORMATS.ZIP }),
+      },
+      { text: i18n.cancel, style: 'cancel' },
+    ]);
   };
 
   handleOnSwitchIsCreateMangaFolder = () => {
@@ -94,6 +106,11 @@ class SaveImageSettings extends Component {
           title={i18n.saveImageFileName}
           description={this.getFileNameFormat()}
           onPress={this.handleOnPressSaveImageFileName}
+        />
+        <PXListItem
+          title={i18n.ugoiraExportFormat}
+          description={i18n.ugoiraExportFormatZip}
+          onPress={this.handleOnPressUgoiraExportFormat}
         />
         <PXListItem
           title={i18n.saveImageCreateFolderForManga}

@@ -2,13 +2,16 @@
 
 import { SAVE_IMAGE_SETTINGS } from '../constants/actionTypes';
 
-export function setSettings({ userFolderName, fileName, isCreateMangaFolder }) {
+export function setSettings({
+  userFolderName, fileName, isCreateMangaFolder, ugoiraExportFormat,
+}) {
   return {
     type: SAVE_IMAGE_SETTINGS.SET,
     payload: {
       userFolderName,
       fileName,
       isCreateMangaFolder,
+      ugoiraExportFormat,
     },
   };
 }
