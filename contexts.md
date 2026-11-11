@@ -10,6 +10,8 @@ Last updated: 2026-11-11
 - Preserve existing functionality and UI unless the task directly requires a change.
 - Baseline: `master` at `ff75b0ac08e8d6621ba5413f285fe5585a8572be` (PxView R 5.3.0).
 - Development branch: `feature/u01-ugoira-download`.
+- Draft review PR: https://github.com/thgillwtnorizoh/pxview/pull/1
+- U01-A implementation commits: `449992b95406eed51015087f9988c4133cb25728`, `24800b6c05850fb3b12f27aa4db75e38270d3061`, `e22a53cc33a127485dfe4f1cc28b902e15e0025c`, `b9a8fb315a771f5046dc54ce4e274bf7dc306401`.
 
 ## U01 mission
 
