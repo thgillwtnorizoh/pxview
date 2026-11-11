@@ -119,3 +119,5 @@ Goal: the existing download button recognizes Ugoira and exports the animation a
 - Android scoped resolution fix: override only `me.relex:photodraweeview:1.1.3` to upstream `2.1.0` served by Maven Central. **Compatibility must be confirmed by Android build and runtime photo-view tests**; source compatibility has not been proven.
 - iOS CI-only fix: set `PLATFORM_NAME=iphonesimulator` and `CURRENT_ARCH=x86_64` during CocoaPods install to avoid unsupported `armv7` in the React Native glog prepare script. No app runtime code modified.
 - Do not claim passing Android/iOS builds until their next GitHub Actions run reports success; check any new blockers in job logs. Persistent npm caching may not prevent multi-minute reinstalls.
+
+- Follow-up CI correction: `android/build.gradle` must declare `mavenCentral()` inside `allprojects.repositories`; the existing Maven Central declaration in `android/app/build.gradle` does not supply dependencies to the `:react-native-photo-view-ex` subproject. Scoped version substitution alone is insufficient without a repository that publishes `2.1.0`.

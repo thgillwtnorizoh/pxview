@@ -35,6 +35,9 @@ allprojects {
         }
 
         google()
+        // Maven Central hosts photodraweeview 2.1.0; it must also be visible
+        // to transitive native-library subprojects, not only :app.
+        mavenCentral()
         jcenter()
         maven { url "https://www.jitpack.io" }
     }
