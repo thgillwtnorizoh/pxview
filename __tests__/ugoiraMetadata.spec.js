@@ -32,6 +32,21 @@ describe('Ugoira download metadata', () => {
     }
   });
 
+  test('prefers an explicitly offered original-quality archive', () => {
+    const { zipUrl, manifest } = parseUgoiraMetadata({
+      ugoira_metadata: {
+        ...payload.ugoira_metadata,
+        zip_urls: {
+          ...payload.ugoira_metadata.zip_urls,
+          original: 'https://example.com/full-resolution.zip',
+        },
+      },
+    }, 123);
+    expect(zipUrl).toBe('https://example.com/full-resolution.zip');
+    expect(manifest.sourceQuality).toBe('original');
+    expect(parseUgoiraMetadata(payload, 123).manifest.sourceQuality).toBe('medium');
+  });
+
   test('retains existing filename convention with the right extension', () => {
     expect(getUgoiraFileName('123_p0.png', UGOIRA_EXPORT_FORMATS.ZIP)).toBe('123_p0.zip');
     expect(() => getUgoiraFileName('123_p0.png', 'mp4')).toThrow();

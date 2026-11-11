@@ -27,13 +27,13 @@ Goal: the existing download button recognizes Ugoira and exports the animation a
 ### U01-A implemented — ZIP source export with timing preservation
 
 - Route Ugoira exports away from the image-only downloader without changing the original image/manga branch.
-- Download original Pixiv Ugoira ZIP, unzip to a unique temporary directory, verify all requested frame files, write `animation.json` with `frames[].file` and each `frames[].delay` (milliseconds), then re-ZIP and save.
+- Download the highest Pixiv API archive explicitly offered (usually the mobile API's **medium / 600x600**, or `zip_urls.original` if provided), unzip to a unique temporary directory, verify all requested frame files, write `animation.json` with `frames[].file` and each `frames[].delay` (milliseconds), then re-ZIP and save.
 - Reject malformed metadata, duplicate or unsafe frame names, missing frames, unexpected HTTP status, and empty output archives.
 - Create a separate temporary working directory per request; clean it in a `finally` block.
 - Filename uses the existing image title/work ID preference, ending in `_p0.zip`; folder location follows existing creator-folder settings.
 - Existing notifications announce start, success or failure. Existing filename overwrite semantics preserved.
 - Adds `ugoiraExportFormat` to Redux Save Image Settings with default `zip`; persistence, backup and restore already serialize the settings object.
-- Adds localized Ugoira format labels (en, ja, zh, zh-TW, zh-HK, zh-MO). The setting currently shows the **only verified export path, original ZIP**.
+- Adds localized Ugoira format labels (en, ja, zh, zh-TW, zh-HK, zh-MO). The setting currently shows the **only implemented export format, Ugoira ZIP**; it is **not** labeled lossless or original-quality when the API returns medium frames.
 - Enables iOS Files visibility for Documents exports; ZIP cannot be stored in the Photos camera roll.
 - Adds unit tests for timing, frame ordering, unsafe/missing metadata, and extension handling.
 
@@ -51,8 +51,10 @@ Goal: the existing download button recognizes Ugoira and exports the animation a
 - `contexts.md` (new)
 
 ### Verification / limits
-- JSON syntax and code paths reviewed through GitHub; no npm install, Jest execution, Android/iOS build, or Pixiv-authenticated device test performed yet.
+- All 6 localization JSON files parsed successfully. Pure metadata parser executed in a V8 isolated harness: frame ordering, total duration, path rejection, duplicate rejection, filename extension checked. Downloader flow was executed in a mock filesystem using actual committed source, verifying archive creation, timing JSON, file move and cleanup, plus missing-frame failure and cleanup. These are **not** Jest or device integration tests.
+- No npm install, Jest execution, Android/iOS build, or Pixiv-authenticated device test performed yet.
 - **U01 is not complete.** Current code supports only ZIP + timing JSON. GIF, MP4, WebM are **not** available until native encoding is implemented and tested.
+- Pixiv's mobile API often offers only `zip_urls.medium` (compressed 600x600 archive); U01-A does not fabricate the full-resolution 1920x1080 URL. Full-resolution acquisition remains a separate verified integration task.
 - ZIP exports must be tested on Android/iOS including ZIP archive contents, iOS Files exposure, error handling, and Android scoped storage. Legacy Android 29 permissions may fail on modern Android versions.
 - Output overwrite is not transactional: a complete staged ZIP is made before replacing a previous same-name destination; if final move fails after replacement, the previous file might be lost.
 - Downloader has no explicit cancellation UI, matching the original save workflow.

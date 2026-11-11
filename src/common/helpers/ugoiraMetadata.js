@@ -3,7 +3,9 @@ export const UGOIRA_EXPORT_FORMATS = { ZIP: 'zip' };
 
 export function parseUgoiraMetadata(response, illustId) {
   const metadata = response && response.ugoira_metadata;
-  const zipUrl = metadata && metadata.zip_urls && metadata.zip_urls.medium;
+  const urls = metadata && metadata.zip_urls;
+  const sourceQuality = urls && urls.original ? 'original' : 'medium';
+  const zipUrl = urls && (urls.original || urls.medium);
   const frames = metadata && metadata.frames;
   if (typeof zipUrl !== 'string' || !/^https:\/\//i.test(zipUrl) ||
       !Array.isArray(frames) || !frames.length) {
@@ -25,6 +27,7 @@ export function parseUgoiraMetadata(response, illustId) {
       type: 'pixiv-ugoira',
       version: 1,
       illustId,
+      sourceQuality,
       frames: normalizedFrames,
       durationMs: normalizedFrames.reduce((total, frame) => total + frame.delay, 0),
     },
