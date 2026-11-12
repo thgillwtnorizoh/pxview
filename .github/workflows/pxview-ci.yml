@@ -68,6 +68,31 @@ jobs:
           java-version: '8'
       - name: Install dependencies from lockfile
         run: npm ci --no-audit --no-fund
+      - name: Align legacy photo-view Java annotations with AndroidX
+        run: |
+          # RN 0.63 uses AndroidX, but this old dependency still imports
+          # android.support.annotation; patch only the CI-installed copy.
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('node_modules/react-native-photo-view-ex/android')
+          changed = []
+          for source in sorted((root / 'src/main/java').rglob('*.java')):
+              before = source.read_text()
+              after = before.replace('import android.support.annotation.', 'import androidx.annotation.')
+              if before != after:
+                  source.write_text(after)
+                  changed.append(str(source))
+          if len(changed) != 2:
+              raise SystemExit(f'Expected two legacy photo-view annotation files, got {changed}')
+          print('Adjusted AndroidX annotation imports:', changed)
+          PY
+          # Provide the annotation API explicitly to the library subproject,
+          # not only the :app classpath.
+          cat >> node_modules/react-native-photo-view-ex/android/build.gradle <<'GRADLE'
+          dependencies {
+              implementation 'androidx.annotation:annotation:1.1.0'
+          }
+          GRADLE
       - name: Create nonfunctional Firebase build placeholder
         run: |
           cat > android/app/google-services.json <<'JSON'
