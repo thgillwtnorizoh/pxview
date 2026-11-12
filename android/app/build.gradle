@@ -144,7 +144,9 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.utopia.pxviewr"
+        // Separate test application: installable beside the original PxView R.
+        // Keep the Java/manifest namespace unchanged for legacy RN 0.63 sources.
+        applicationId "com.ugoira.pxviewr"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 404

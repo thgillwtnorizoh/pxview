@@ -150,7 +150,7 @@ jobs:
               {
                 "client_info": {
                   "mobilesdk_app_id": "1:123456789012:android:1234567890abcdef123456",
-                  "android_client_info": { "package_name": "com.utopia.pxviewr" }
+                  "android_client_info": { "package_name": "com.ugoira.pxviewr" }
                 },
                 "api_key": [{ "current_key": "CI_PLACEHOLDER_NOT_A_REAL_API_KEY" }]
               }
@@ -169,6 +169,17 @@ jobs:
           printf 'ndk.dir=%s\n' "$ANDROID_NDK_HOME" >> local.properties
           # CI omits the optional Flipper debug UI, not React Native itself.
           ./gradlew --no-daemon --stacktrace -PpxviewCiNoFlipper=true :app:assembleDebug
+      - name: Verify Android APK install identity
+        run: |
+          set -euo pipefail
+          APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK_PATH"
+          BADGING="$("$ANDROID_SDK_ROOT/build-tools/29.0.2/aapt" dump badging "$APK_PATH")"
+          # APK identity is what Android uses to distinguish installed apps.
+          printf '%s\n' "$BADGING" | grep -F "package: name='com.ugoira.pxviewr'"
+          # Explicit Java class name must still point to the existing activity.
+          printf '%s\n' "$BADGING" | grep -F "launchable-activity: name='com.utopia.pxviewr.MainActivity'"
+          printf '%s\n' "$BADGING" | grep -F "application-label:'PxView R'"
       - name: Upload unsigned-for-release Android debug APK
         uses: actions/upload-artifact@v4
         with:
