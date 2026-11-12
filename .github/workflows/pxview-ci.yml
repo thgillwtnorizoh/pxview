@@ -58,10 +58,13 @@ jobs:
           # The retired Android SDK 'tools' package is no longer available.
           # Keep modern cmdline-tools and platform-tools for sdkmanager.
           packages: 'platform-tools'
-      - name: Install legacy Android SDK packages
+      - name: Install legacy Android SDK packages and NDK r21e
         run: |
           yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-29" "build-tools;29.0.2"
+          # AGP 3.5.3 needs the legacy per-ABI GNU toolchain layout.
+          # GitHub's default NDK 30 lacks arm-linux-androideabi-4.9.
+          sdkmanager "platforms;android-29" "build-tools;29.0.2" "ndk;21.4.7075529"
+          test -x "$ANDROID_SDK_ROOT/ndk/21.4.7075529/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-strip"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -159,6 +162,11 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
+          # Select the pinned NDK for this CI job only, without changing
+          # project defaults or release-build configuration.
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/21.4.7075529"
+          test -x "$ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-strip"
+          printf 'ndk.dir=%s\n' "$ANDROID_NDK_HOME" >> local.properties
           # CI omits the optional Flipper debug UI, not React Native itself.
           ./gradlew --no-daemon --stacktrace -PpxviewCiNoFlipper=true :app:assembleDebug
       - name: Upload unsigned-for-release Android debug APK
