@@ -1,0 +1,304 @@
+name: PxView Android and iOS CI
+
+on:
+  push:
+    branches:
+      - feature/u01-ugoira-download
+    paths-ignore:
+      - 'contexts.md'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - 'contexts.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pxview-ci-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: JavaScript regression tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '14.21.3'
+          cache: npm
+      - name: Install dependencies from lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Run Jest
+        run: npm test -- --ci --runInBand --watch=false
+
+  android:
+    name: Android debug APK
+    needs: tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '14.21.3'
+          cache: npm
+      # New Android SDK tools require JDK 17. Gradle 6.2/AGP 3.5.3
+      # still require the legacy JDK for the actual application build.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          # The retired Android SDK 'tools' package is no longer available.
+          # Keep modern cmdline-tools and platform-tools for sdkmanager.
+          packages: 'platform-tools'
+      - name: Install legacy Android SDK packages and NDK r21e
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          # AGP 3.5.3 needs the legacy per-ABI GNU toolchain layout.
+          # GitHub's default NDK 30 lacks arm-linux-androideabi-4.9.
+          sdkmanager "platforms;android-29" "build-tools;29.0.2" "ndk;21.4.7075529"
+          test -x "$ANDROID_SDK_ROOT/ndk/21.4.7075529/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-strip"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+      - name: Install dependencies from lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Align legacy photo-view Java annotations with AndroidX
+        run: |
+          # RN 0.63 uses AndroidX, but this old dependency still imports
+          # android.support.annotation; patch only the CI-installed copy.
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('node_modules/react-native-photo-view-ex/android')
+          changed = []
+          for source in sorted((root / 'src/main/java').rglob('*.java')):
+              before = source.read_text()
+              after = before.replace('import android.support.annotation.', 'import androidx.annotation.')
+              if before != after:
+                  source.write_text(after)
+                  changed.append(str(source))
+          if len(changed) != 2:
+              raise SystemExit(f'Expected two legacy photo-view annotation files, got {changed}')
+          print('Adjusted AndroidX annotation imports:', changed)
+          PY
+          # Provide the annotation API explicitly to the library subproject,
+          # not only the :app classpath.
+          cat >> node_modules/react-native-photo-view-ex/android/build.gradle <<'GRADLE'
+          dependencies {
+              implementation 'androidx.annotation:annotation:1.1.0'
+          }
+          GRADLE
+      - name: Align legacy react-native-share Java dependencies with AndroidX
+        run: |
+          # This older library has five support-library imports across three
+          # Java files. CI patches the installed dependency, not app sources.
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('node_modules/react-native-share/android')
+          replacements = {
+              'import android.support.annotation.NonNull;': ('import androidx.annotation.NonNull;', 1),
+              'import android.support.annotation.Nullable;': ('import androidx.annotation.Nullable;', 1),
+              'import android.support.v4.content.CursorLoader;': ('import androidx.loader.content.CursorLoader;', 1),
+              'import android.support.v4.content.FileProvider;': ('import androidx.core.content.FileProvider;', 2),
+          }
+          sources = sorted((root / 'src/main/java').rglob('*.java'))
+          if not sources:
+              raise SystemExit('react-native-share Java sources not found')
+          counts = {old: 0 for old in replacements}
+          changed = []
+          for source in sources:
+              before = source.read_text()
+              after = before
+              for old, (new, _) in replacements.items():
+                  counts[old] += before.count(old)
+                  after = after.replace(old, new)
+              if after != before:
+                  source.write_text(after)
+                  changed.append(str(source))
+          mismatched = {old: (counts[old], expected) for old, (_, expected) in replacements.items()
+                        if counts[old] != expected}
+          if mismatched or len(changed) != 3:
+              raise SystemExit(f'Unexpected react-native-share imports: {mismatched}, changed={changed}')
+          print('Migrated react-native-share Java imports:', changed)
+          PY
+          # Declare the AndroidX APIs in the library subproject itself.
+          cat >> node_modules/react-native-share/android/build.gradle <<'GRADLE'
+          dependencies {
+              implementation 'androidx.annotation:annotation:1.1.0'
+              implementation 'androidx.core:core:1.3.2'
+              implementation 'androidx.loader:loader:1.0.0'
+          }
+          GRADLE
+      - name: Create nonfunctional Firebase build placeholder
+        run: |
+          cat > android/app/google-services.json <<'JSON'
+          {
+            "project_info": {
+              "project_number": "123456789012",
+              "project_id": "pxviewr-ci-placeholder",
+              "storage_bucket": "pxviewr-ci-placeholder.appspot.com"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:123456789012:android:1234567890abcdef123456",
+                  "android_client_info": { "package_name": "com.ugoira.pxviewr" }
+                },
+                "api_key": [{ "current_key": "CI_PLACEHOLDER_NOT_A_REAL_API_KEY" }]
+              }
+            ],
+            "configuration_version": "1"
+          }
+          JSON
+      - name: Build Android debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          # Select the pinned NDK for this CI job only, without changing
+          # project defaults or release-build configuration.
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/21.4.7075529"
+          test -x "$ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-strip"
+          printf 'ndk.dir=%s\n' "$ANDROID_NDK_HOME" >> local.properties
+          # CI omits the optional Flipper debug UI, not React Native itself.
+          ./gradlew --no-daemon --stacktrace -PpxviewCiNoFlipper=true :app:assembleDebug
+      - name: Verify Android APK install identity
+        run: |
+          set -euo pipefail
+          APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK_PATH"
+          BADGING="$("$ANDROID_SDK_ROOT/build-tools/29.0.2/aapt" dump badging "$APK_PATH")"
+          # APK identity is what Android uses to distinguish installed apps.
+          printf '%s\n' "$BADGING" | grep -F "package: name='com.ugoira.pxviewr'"
+          # Explicit Java class name must still point to the existing activity.
+          printf '%s\n' "$BADGING" | grep -F "launchable-activity: name='com.utopia.pxviewr.MainActivity'"
+          printf '%s\n' "$BADGING" | grep -F "application-label:'PxView R'"
+      - name: Upload unsigned-for-release Android debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pxview-android-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  ios:
+    name: iOS simulator build (no signing)
+    needs: tests
+    runs-on: macos-15-intel
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '14.21.3'
+          cache: npm
+      - name: Report Apple toolchain
+        run: |
+          xcodebuild -version
+          pod --version
+      - name: Restore persistent iOS npm cache
+        uses: actions/cache/restore@v4
+        id: ios-npm-cache
+        with:
+          path: ~/.npm
+          key: pxview-ios-npm-node14-${{ hashFiles('package-lock.json') }}
+      - name: Install dependencies from lockfile
+        run: npm ci --no-audit --no-fund
+      # Save the cache before CocoaPods/Xcode compilation so that a native
+      # build failure does not require downloading 1,740 npm packages again.
+      - name: Preserve iOS npm cache after installation
+        if: steps.ios-npm-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.npm
+          key: pxview-ios-npm-node14-${{ hashFiles('package-lock.json') }}
+      - name: Create nonfunctional Firebase build placeholder
+        run: |
+          cat > ios/GoogleService-Info.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>API_KEY</key><string>CI_PLACEHOLDER_NOT_A_REAL_API_KEY</string>
+            <key>GCM_SENDER_ID</key><string>123456789012</string>
+            <key>GOOGLE_APP_ID</key><string>1:123456789012:ios:1234567890abcdef123456</string>
+            <key>PROJECT_ID</key><string>pxviewr-ci-placeholder</string>
+            <key>BUNDLE_ID</key><string>com.utopia.pxviewr</string>
+            <key>PLIST_VERSION</key><string>1</string>
+          </dict></plist>
+          PLIST
+          plutil -lint ios/GoogleService-Info.plist
+      - name: Remove obsolete RNZipArchive flag rejected by Xcode 16
+        run: |
+          # v5.0.2 puts -GCC_PREPROCESSOR_DEFINITIONS=... into clang flags.
+          # Clang 16+ rejects -G; remove only that legacy podspec line.
+          python3 - <<'PY'
+          from pathlib import Path
+          podspec = Path('node_modules/react-native-zip-archive/RNZipArchive.podspec')
+          lines = podspec.read_text().splitlines(keepends=True)
+          legacy = [line for line in lines if "s.compiler_flags = '-GCC_PREPROCESSOR_DEFINITIONS=" in line]
+          if len(legacy) != 1:
+              raise SystemExit(f'Expected one obsolete RNZipArchive flag, got {len(legacy)}')
+          podspec.write_text(''.join(line for line in lines if line not in legacy))
+          print('Removed the obsolete RNZipArchive Podspec Clang flag for Xcode 16')
+          PY
+      - name: Install CocoaPods
+        working-directory: ios
+        env:
+          # RN 0.63 glog's prepare script defaults to removed armv7 if unset.
+          # Build its configure probe for the Intel iOS simulator instead.
+          PLATFORM_NAME: iphonesimulator
+          CURRENT_ARCH: x86_64
+        run: |
+          set -o pipefail
+          pod install --repo-update 2>&1 | tee "$RUNNER_TEMP/pxview-ios-pods.log"
+      - name: Disable obsolete Flipper compiler macro in CI Debug app
+        run: |
+          # Podfile omits Flipper in CI; the app's Debug project setting
+          # otherwise still activates missing FlipperKit headers.
+          python3 - <<'PY'
+          from pathlib import Path
+          project = Path('ios/PxViewR.xcodeproj/project.pbxproj')
+          before = project.read_text()
+          macro = '"FB_SONARKIT_ENABLED=1",'
+          if before.count(macro) != 1:
+              raise SystemExit(f'Expected one Debug Flipper macro, got {before.count(macro)}')
+          lines = before.splitlines(keepends=True)
+          project.write_text(''.join(line for line in lines if macro not in line))
+          print('Removed CI-only Debug Flipper macro; other build settings retained')
+          PY
+      - name: Build app for iOS simulator without signing
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace ios/PxViewR.xcworkspace \
+            -scheme PxViewR \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/PxViewDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/pxview-ios-build.log"
+      - name: Upload iOS setup and build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pxview-ios-build-log
+          path: |
+            ${{ runner.temp }}/pxview-ios-pods.log
+            ${{ runner.temp }}/pxview-ios-build.log
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload iOS simulator application
+        uses: actions/upload-artifact@v4
+        with:
+          name: pxview-ios-simulator-app
+          path: ${{ runner.temp }}/PxViewDerivedData/Build/Products/Debug-iphonesimulator/*.app/
+          if-no-files-found: error
+          retention-days: 14

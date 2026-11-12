@@ -165,6 +165,8 @@
   "saveImageNameWorkTitle": "Work Title",
   "saveImageNameWorkIdWorkTitle": "Work ID_Work Title",
   "saveImageSettings": "Save Image Settings",
+  "ugoiraExportFormat": "Ugoira Export Format",
+  "ugoiraExportFormatZip": "Ugoira ZIP (frames + timing)",
   "saveImageStart": "Saving image",
   "saveImageSuccess": "{0} saved successfully",
   "saveImageUserFolderName": "User folder name",

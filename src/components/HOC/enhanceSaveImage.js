@@ -14,6 +14,8 @@ import RNFetchBlob from 'rn-fetch-blob';
 import hoistNonReactStatic from 'hoist-non-react-statics';
 import Promise from 'bluebird';
 import sanitize from 'sanitize-filename';
+import downloadUgoira from '../../common/helpers/ugoiraDownload';
+import { getUgoiraFileName, UGOIRA_EXPORT_FORMATS } from '../../common/helpers/ugoiraMetadata';
 import { connectLocalization } from '../Localization';
 import {
   SAVE_FILE_NAME_USER_FOLDER_FORMAT,
@@ -148,6 +150,31 @@ const enhanceSaveImage = (WrappedComponent) => {
             { cancelable: false },
           );
         }
+      }
+      if (workType === 'ugoira') {
+        const format = saveImageSettings.ugoiraExportFormat || UGOIRA_EXPORT_FORMATS.ZIP;
+        const imagesDir = this.getImageSavePath(
+          workId, workTitle, workType, userId, userName, saveImageSettings,
+        );
+        const imageFileName = this.getImageFileName(
+          workId, workTitle, workType, saveImageSettings, 0,
+        );
+        const fileName = imageFileName.replace(/\.png$/i, '.zip');
+        this.showToast(i18n.saveImageStart);
+        try {
+          if (!(await RNFetchBlob.fs.isDir(imagesDir))) {
+            await RNFetchBlob.fs.mkdir(imagesDir);
+          }
+          await downloadUgoira({
+            workId,
+            destination: `${imagesDir}/${getUgoiraFileName(imageFileName, format)}`,
+            format,
+          });
+          this.showToast(i18n.formatString(i18n.saveImageSuccess, fileName));
+        } catch (err) {
+          this.showToast(i18n.formatString(i18n.saveImageError, fileName));
+        }
+        return null;
       }
       this.showToast(
         i18n.formatString(
