@@ -124,6 +124,18 @@ def enableProguardInReleaseBuilds = false
 def enableHermes = project.ext.react.get("enableHermes", true);
 
 android {
+    // In CI, the optional Flipper debug bootstrap is excluded together with
+    // its debug-only libraries; regular local debug builds are unchanged.
+    // MainApplication loads ReactNativeFlipper reflectively.
+    sourceSets {
+        debug {
+            java {
+                if (project.hasProperty('pxviewCiNoFlipper')) {
+                    exclude '**/ReactNativeFlipper.java'
+                }
+            }
+        }
+    }
     compileSdkVersion rootProject.ext.compileSdkVersion
 
     compileOptions {
@@ -205,15 +217,19 @@ dependencies {
     implementation "com.facebook.react:react-native:+"  // From node_modules
 
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
-    debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}") {
-      exclude group:'com.facebook.fbjni'
-    }
-    debugImplementation("com.facebook.flipper:flipper-network-plugin:${FLIPPER_VERSION}") {
-        exclude group:'com.facebook.flipper'
-        exclude group:'com.squareup.okhttp3', module:'okhttp'
-    }
-    debugImplementation("com.facebook.flipper:flipper-fresco-plugin:${FLIPPER_VERSION}") {
-        exclude group:'com.facebook.flipper'
+    // Retired Fresco Flipper artifacts are unavailable on Maven Central.
+    // Do not remove these from normal developer debug builds.
+    if (!project.hasProperty('pxviewCiNoFlipper')) {
+        debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}") {
+          exclude group:'com.facebook.fbjni'
+        }
+        debugImplementation("com.facebook.flipper:flipper-network-plugin:${FLIPPER_VERSION}") {
+            exclude group:'com.facebook.flipper'
+            exclude group:'com.squareup.okhttp3', module:'okhttp'
+        }
+        debugImplementation("com.facebook.flipper:flipper-fresco-plugin:${FLIPPER_VERSION}") {
+            exclude group:'com.facebook.flipper'
+        }
     }
 
     if (enableHermes) {

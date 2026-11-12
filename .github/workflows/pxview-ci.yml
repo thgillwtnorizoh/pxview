@@ -93,7 +93,8 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace :app:assembleDebug
+          # CI omits the optional Flipper debug UI, not React Native itself.
+          ./gradlew --no-daemon --stacktrace -PpxviewCiNoFlipper=true :app:assembleDebug
       - name: Upload unsigned-for-release Android debug APK
         uses: actions/upload-artifact@v4
         with:

@@ -27,6 +27,13 @@ target 'PxViewR' do
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '9.0'
+       # React Native 0.63 Yoga.cpp uses a boolean bitwise OR at line 2285.
+       # Modern Clang diagnoses it under the legacy Yoga podspec's -Werror.
+       # Keep all other Yoga compiler warnings as errors.
+       if ENV['CI'] == 'true' && target.name == 'Yoga'
+         flags = config.build_settings['OTHER_CPLUSPLUSFLAGS'] || '$(inherited)'
+         config.build_settings['OTHER_CPLUSPLUSFLAGS'] = "#{flags} -Wno-error=bitwise-instead-of-logical"
+       end
       end
      end
   end
