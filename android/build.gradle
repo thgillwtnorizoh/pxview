@@ -9,8 +9,12 @@ buildscript {
         targetSdkVersion = 29
     }
     repositories {
-        jcenter()
+        // Buildscript classpath dependencies (AGP and its transitive libraries)
+        // require Maven Central. allprojects.repositories does NOT cover these.
         google()
+        mavenCentral()
+        // Retain legacy fallback for older project dependencies.
+        jcenter()
     }
     dependencies {
         classpath("com.android.tools.build:gradle:3.5.3")
